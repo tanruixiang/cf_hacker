@@ -9,7 +9,7 @@ import codecs
 
 import requests
 from bs4 import BeautifulSoup
-
+ORIGINAL_URL='https://codeforces.ml'
 DOWNLOAD_URL = 'https://codeforces.ml/problemset/status'
 
 
@@ -32,7 +32,6 @@ def parse_html(html):
     submission_problem=[]
     rated=[]
     submission_runtime=[]
-    movie_name_list=[]
     for movie_li in movie_list_soup.find_all('tr')[1:]:
        # print(movie_li)
         detail = movie_li.find('td', attrs={'class': 'id-cell'})
@@ -42,7 +41,8 @@ def parse_html(html):
         submission_time.append(detail.span.string)
         #处理一下两个分开的单词
         detail = movie_li.find('td', attrs={'class': 'status-party-cell'})
-        submission_url.append(detail.a['class'])
+        rated.append(detail.a['class'][0])
+        submission_color.append(detail.a['class'][1])
 
         detail=detail.find_next_sibling('td')
         submission_problem.append(detail.a['href'])
@@ -68,22 +68,24 @@ def parse_html(html):
         #print(detail.string)
    # print(soup)
    # next_page = soup.find('div', attrs={'class': 'pagination'})
-    next_page=soup.find(lambda tag: tag.name=='div' and tag.get('class')==['pagination'])
-    next_page=next_page.find('a',attrs={'class','arrow'})
+    next_page=soup.find(lambda tag: tag.name=='a' and tag.get('class')==['arrow'] and tag.string=='→' )
+   # next_page=next_page.find('a',attrs={'class','arrow'})
+   # print(ORIGINAL_URL + next_page['href'])
     if next_page:
-        return movie_name_list, DOWNLOAD_URL + next_page['href']
-    return movie_name_list, None
+        return submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,ORIGINAL_URL + next_page['href']
+    return submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,None
 
+
+def insert_to_database(submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color):
+    return 1
 
 def main():
     url = DOWNLOAD_URL
-
-    with codecs.open('movies', 'wb', encoding='utf-8') as fp:
-        while url:
-            html = download_page(url)
-            data, url = parse_html(html)
-            fp.write(u'{movies}\n'.format(movies='\n'.join(movies)))
-
+    while url:
+        print(url)
+        html = download_page(url)
+        submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,url=parse_html(html)
+        #insert_to_database( submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color)
 
 if __name__ == '__main__':
     main()
