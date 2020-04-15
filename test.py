@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # encoding=utf-8
 
-"""
-爬取豆瓣电影TOP250 - 完整示例代码
-"""
-
 import codecs
-
 import requests
+import sqlite3
 from bs4 import BeautifulSoup
 ORIGINAL_URL='https://codeforces.ml'
 DOWNLOAD_URL = 'https://codeforces.ml/problemset/status'
@@ -32,10 +28,13 @@ def parse_html(html):
     submission_problem=[]
     rated=[]
     submission_runtime=[]
+    submission_code=[]
     for movie_li in movie_list_soup.find_all('tr')[1:]:
        # print(movie_li)
         detail = movie_li.find('td', attrs={'class': 'id-cell'})
         submission_url.append(detail.a['href'])
+        submission_code.append(get_code(ORIGINAL_URL+detail.a['href']))
+        #print(get_code(ORIGINAL_URL+detail.a['href']))
 
         detail = movie_li.find('td', attrs={'class': 'status-small'})
         submission_time.append(detail.span.string)
@@ -72,19 +71,31 @@ def parse_html(html):
    # next_page=next_page.find('a',attrs={'class','arrow'})
    # print(ORIGINAL_URL + next_page['href'])
     if next_page:
-        return submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,ORIGINAL_URL + next_page['href']
-    return submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,None
+        return submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,ORIGINAL_URL + next_page['href']
+    return submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,None
 
 
 def insert_to_database(submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color):
-    return 1
+    db=sqlite3.connect('database.db')
+
+    return
+
+def get_code(url):
+    html = download_page(url)
+    testsoup = BeautifulSoup(html)
+    testsoup=testsoup.find('pre',attrs={'id':'program-source-text'})
+    return testsoup.string
+def test_db():
+    #db = sqlite3.connect('database.db')
+    #db.execute('''select datetime('now')''')
+    return
 
 def main():
     url = DOWNLOAD_URL
     while url:
         print(url)
         html = download_page(url)
-        submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,url=parse_html(html)
+        submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,url=parse_html(html)
         #insert_to_database( submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color)
 
 if __name__ == '__main__':
