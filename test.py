@@ -29,8 +29,10 @@ def parse_html(html):
     rated=[]
     submission_runtime=[]
     submission_code=[]
+    i=0
     for movie_li in movie_list_soup.find_all('tr')[1:]:
-       # print(movie_li)
+        print(i)
+        i+=1
         detail = movie_li.find('td', attrs={'class': 'id-cell'})
         submission_url.append(detail.a['href'])
         submission_code.append(get_code(ORIGINAL_URL+detail.a['href']))
@@ -40,6 +42,7 @@ def parse_html(html):
         submission_time.append(detail.span.string)
         #处理一下两个分开的单词
         detail = movie_li.find('td', attrs={'class': 'status-party-cell'})
+        #print(detail.a['class'][0])
         rated.append(detail.a['class'][0])
         submission_color.append(detail.a['class'][1])
 
@@ -74,10 +77,31 @@ def parse_html(html):
         return submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,ORIGINAL_URL + next_page['href']
     return submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,None
 
-
-def insert_to_database(submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color):
+def init_db():
     db=sqlite3.connect('database.db')
-
+    db.execute('''CREATE table status (
+        url varchar PRIMARY KEY not NULL,
+        lang varchar not NULL,
+        verdict varchar not NULL,
+        submit_time varchar ,
+        runtime varchar,
+        rated bool,
+        submission_color varchar 
+        code varchar 
+        )''')
+def insert_to_database(submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color):
+    print('begin insert to the database')
+    db=sqlite3.connect('database.db')
+    c=db.cursor()
+    for i in range(0,len(submission_url())):
+        tmp='false'
+        if(rated[i]=='rated-user'):
+            tmp='true'
+        else :
+            tmp='false'
+        c.execute("INSERT INTO status (url,lang,verdict,submit_time,runtime,rated, submission_color,code) \
+              VALUES ('{0}', '{1}', '{2}', '{3}','{4}','{5}','{6}','{7}')".format(submission_url[i],submission_lang[i],submission_verdict[i]\
+                    ,submission_time[i],tmp,submission_color[i],submission_code[i]))
     return
 
 def get_code(url):
@@ -96,7 +120,7 @@ def main():
         print(url)
         html = download_page(url)
         submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color,url=parse_html(html)
-        #insert_to_database( submission_url,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color)
+        insert_to_database(submission_url,submission_code,submission_lang,submission_verdict,submission_time,submission_runtime,rated,submission_color)
 
 if __name__ == '__main__':
     main()
